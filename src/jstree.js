@@ -458,7 +458,7 @@
 						id : '#',
 						parent : null,
 						parents : [],
-						item_count: 0,
+						item_count: null,
 						children : [],
 						children_d : [],
 						state : { loaded : false }
@@ -1521,7 +1521,7 @@
 				parents		: ps,
 				children	: [],
 				children_d	: [],
-				item_count: 0,
+				item_count: null,
 				data		: null,
 				state		: { },
 				li_attr		: { id : false },
@@ -1535,7 +1535,7 @@
 			}
 			if(d && d.id) { tmp.id = d.id.toString(); }
 			if(d && d.text) { tmp.text = d.text; }
-			if (d && d.item_count) { tmp.item_count = d.item_count; }
+			if (d && d.item_count !== null) { tmp.item_count = d.item_count; }
 			if(d && d.data && d.data.jstree && d.data.jstree.icon) {
 				tmp.icon = d.data.jstree.icon;
 			}
@@ -1670,7 +1670,9 @@
 				m = this._model.data,
 				f = false,
 				s = false,
-				tmp = null;
+				tmp = null,
+				nn,
+				ic;
 			if(!obj) { return false; }
 			if(obj.id === '#') {  return this.redraw(true); }
 			deep = deep || obj.children.length === 0;
@@ -1767,12 +1769,11 @@
 					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom';
 				}
 			}
-
-			node.childNodes[1].innerHTML = '<span class="node-name">' + obj.text + '</span>';
-			if (obj.item_count > 0) {
-			    node.childNodes[1].innerHTML += '<span class="item-count">' + (obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count) + '</span>';
+			nn = $('<span>').addClass('node-name').html(obj.text).appendTo($(node.childNodes[1]));
+			ic = $('<span>').addClass('item-count').appendTo($(node.childNodes[1]));
+			if (obj.item_count !== null) {
+				ic.html(obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count);
 			}
-
 			if(deep && obj.children.length && obj.state.opened && obj.state.loaded) {
 				k = d.createElement('UL');
 				k.setAttribute('role', 'group');
@@ -2731,6 +2732,35 @@
 			return true;
 		},
 		/**
+        	 * get the item_count of a node
+        	 * @name get_item_count(obj)
+        	 * @param  {mixed} obj the node
+        	 * @return {String}
+        	 */
+		get_item_count: function (obj) {
+			obj = this.get_node(obj);
+			return (!obj) ? false : obj.item_count;
+		},
+		/**
+		 * set (change) the item_count of a node
+		 * @name set_item_count(obj, id)
+		 * @param  {mixed} obj the node
+		 * @param  {String} new item_count integer
+		 * @return {Boolean}
+		 */
+		set_item_count: function (obj, count) {
+			var dom;
+			obj = this.get_node(obj);
+			if (!obj || count % 1 !== 0) { return false; }
+			var m = this._model.data;
+			// update model and obj itself
+			dom = this.get_node(obj, true);
+			obj.item_count = count;
+			m[obj.id].item_count = count;
+			dom.find('.item-count').html(count);
+			return true;
+		},
+		/**
 		 * get the text value of a node
 		 * @name get_text(obj)
 		 * @param  {mixed} obj the node
@@ -2765,15 +2795,15 @@
 			if (dom.length) {
 			    dom = dom.children(".jstree-anchor:eq(0)");
 			    tmp = dom.children("I").clone();
-			    nn = $('<span>').addClass('node-name').html(obj.text);
-			    ic = $('<span>').addClass('item-count').html(obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count);
 			    dom.html('');
-			    nn.appendTo(dom);
-
-			    if (obj.item_count > 0) {
-			        ic.appendTo(dom);
+				nn = $('<span>').addClass('node-name').html(obj.text).appendTo(dom);
+				ic = $('<span>').addClass('item-count').appendTo(dom);
+				if (obj.text.length === 0) {
+					ic.hide();
+				}
+				if (obj.item_count !== null) {
+					ic.html(obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count);
 			    }
-
 			    dom.prepend(tmp);
 				/**
 				 * triggered when a node text value is changed
