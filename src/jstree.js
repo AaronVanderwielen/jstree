@@ -344,6 +344,21 @@
 		 */
 		check_callback	: false,
 		/**
+        	* sets the max number for a node's item count
+        	* if a node is loaded with a value for item_count that exceeds this set number, it will display as max_item_count+ on tree (ie, 99+)
+        	*
+        	* __Examples__
+        	*
+        	*	$('#tree').jstree({
+        	*		'core' : {
+        	*			'max_item_count' : 99
+        	*		}
+        	*	});
+        	* 
+        	* @name $.jstree.defaults.core.max_item_count
+        	*/
+		max_item_count	: 99,
+		/**
 		 * a callback called with a single object parameter in the instance's scope when something goes wrong (operation prevented, ajax failed, etc)
 		 * @name $.jstree.defaults.core.error
 		 */
@@ -443,6 +458,7 @@
 						id : '#',
 						parent : null,
 						parents : [],
+						item_count: 0,
 						children : [],
 						children_d : [],
 						state : { loaded : false }
@@ -1505,6 +1521,7 @@
 				parents		: ps,
 				children	: [],
 				children_d	: [],
+				item_count: 0,
 				data		: null,
 				state		: { },
 				li_attr		: { id : false },
@@ -1518,6 +1535,7 @@
 			}
 			if(d && d.id) { tmp.id = d.id.toString(); }
 			if(d && d.text) { tmp.text = d.text; }
+			if (d && d.item_count) { tmp.item_count = d.item_count; }
 			if(d && d.data && d.data.jstree && d.data.jstree.icon) {
 				tmp.icon = d.data.jstree.icon;
 			}
@@ -1749,9 +1767,11 @@
 					node.childNodes[1].childNodes[0].className += ' jstree-themeicon-custom';
 				}
 			}
-			//node.childNodes[1].appendChild(d.createTextNode(obj.text));
-			node.childNodes[1].innerHTML += obj.text;
-			// if(obj.data) { $.data(node, obj.data); } // always work with node's data, no need to touch jquery store
+
+			node.childNodes[1].innerHTML = '<span class="node-name">' + obj.text + '</span>';
+			if (obj.item_count > 0) {
+			    node.childNodes[1].innerHTML += '<span class="item-count">' + (obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count) + '</span>';
+			}
 
 			if(deep && obj.children.length && obj.state.opened && obj.state.loaded) {
 				k = d.createElement('UL');
@@ -2730,7 +2750,7 @@
 		 * @trigger set_text.jstree
 		 */
 		set_text : function (obj, val) {
-			var t1, t2, dom, tmp;
+			var t1, t2, dom, tmp, nn, ic;
 			if($.isArray(obj)) {
 				obj = obj.slice();
 				for(t1 = 0, t2 = obj.length; t1 < t2; t1++) {
@@ -2742,10 +2762,19 @@
 			if(!obj || obj.id === '#') { return false; }
 			obj.text = val;
 			dom = this.get_node(obj, true);
-			if(dom.length) {
-				dom = dom.children(".jstree-anchor:eq(0)");
-				tmp = dom.children("I").clone();
-				dom.html(val).prepend(tmp);
+			if (dom.length) {
+			    dom = dom.children(".jstree-anchor:eq(0)");
+			    tmp = dom.children("I").clone();
+			    nn = $('<span>').addClass('node-name').html(obj.text);
+			    ic = $('<span>').addClass('item-count').html(obj.item_count > this.settings.core.max_item_count ? this.settings.core.max_item_count + "+" : obj.item_count);
+			    dom.html('');
+			    nn.appendTo(dom);
+
+			    if (obj.item_count > 0) {
+			        ic.appendTo(dom);
+			    }
+
+			    dom.prepend(tmp);
 				/**
 				 * triggered when a node text value is changed
 				 * @event
@@ -2776,6 +2805,7 @@
 			var tmp = {
 				'id' : obj.id,
 				'text' : obj.text,
+				'item_count': obj.item_count,
 				'icon' : this.get_icon(obj),
 				'li_attr' : obj.li_attr,
 				'a_attr' : obj.a_attr,
