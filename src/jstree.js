@@ -2757,7 +2757,7 @@
 			dom = this.get_node(obj, true);
 			obj.item_count = count;
 			m[obj.id].item_count = count;
-			dom.find('.item-count').html(count);
+			dom.find('.item-count')[0].innerHTML = count;
 			return true;
 		},
 		/**
